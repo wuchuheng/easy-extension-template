@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState } from 'react';
 
 export default function App() {
-  const [enabled, setEnabled] = useState(true)
+  const [enabled, setEnabled] = useState(true);
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-72 rounded-xl bg-white shadow-2xl ring-1 ring-gray-200">
@@ -32,5 +32,5 @@ export default function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }

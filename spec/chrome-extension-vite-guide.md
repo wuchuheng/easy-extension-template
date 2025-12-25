@@ -3,11 +3,13 @@
 ## Project Analysis
 
 ### Current State
+
 The project `com.woofmanager.ai.identification.extension` is a Vite + TypeScript template project with the following characteristics:
 
 **Location**: `/com.woofmanager.ai.identification.extension/`
 
 **Technology Stack**:
+
 - TypeScript 5.9.3
 - Vite (^6.0.0) - Standard Vite for reliable HMR with CRXJS
 - Target: ES2022
@@ -18,7 +20,7 @@ The project `com.woofmanager.ai.identification.extension` is a Vite + TypeScript
 
 ## Goal
 
-Convert this project into a functional Chrome extension for the "WoofManager AI Identification" system - a content identification tool that runs background tasks and uses WASM with OPFS.
+Convert this project into a functional Chrome extension for the "Easy Extension" template - a content identification tool that runs background tasks and uses WASM with OPFS.
 
 ---
 
@@ -28,14 +30,15 @@ Convert this project into a functional Chrome extension for the "WoofManager AI 
 
 This extension will use a **multi-component architecture**:
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| **Popup** | Quick access UI when clicking extension icon | `src/popup/` |
-| **Background Service Worker** | Background tasks for content identification | `src/background/` |
-| **Content Script** | Injected into web pages for content access | `src/contents/` |
-| **Options Page** | Settings and configuration with HashRouter | `src/options/` |
+| Component                     | Purpose                                      | Location          |
+| ----------------------------- | -------------------------------------------- | ----------------- |
+| **Popup**                     | Quick access UI when clicking extension icon | `src/popup/`      |
+| **Background Service Worker** | Background tasks for content identification  | `src/background/` |
+| **Content Script**            | Injected into web pages for content access   | `src/contents/`   |
+| **Options Page**              | Settings and configuration with HashRouter   | `src/options/`    |
 
 ### Primary Function
+
 Identify content on web pages using background tasks with WASM-based AI processing.
 
 ---
@@ -77,6 +80,7 @@ Install required npm packages:
 ```
 
 **Key Packages**:
+
 - `@crxjs/vite-plugin` - Chrome extension Vite plugin with HMR support
 - `@types/chrome` - TypeScript type definitions for Chrome Extension APIs
 - `react` / `react-dom` - UI framework for popup and options pages
@@ -196,9 +200,7 @@ Update `tsconfig.json`:
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "references": [
-    { "path": "./tsconfig.node.json" }
-  ]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
 ```
 
@@ -222,6 +224,7 @@ Create `tsconfig.node.json` for Node config files:
 ### Phase 4: ESLint and Prettier Configuration
 
 **Code Quality Requirements**:
+
 - Character encoding: **UTF-8** for all source files
 - End of line: **LF (Linux style)** for all source files
 - Code formatting: Prettier with consistent style
@@ -235,49 +238,43 @@ module.exports = {
   env: {
     browser: true,
     es2022: true,
-    node: true
+    node: true,
   },
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
-    'prettier' // Must be last to override other configs
+    'prettier', // Must be last to override other configs
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
     ecmaFeatures: {
-      jsx: true
-    }
+      jsx: true,
+    },
   },
-  plugins: [
-    '@typescript-eslint',
-    'react',
-    'react-hooks'
-  ],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks'],
   settings: {
     react: {
-      version: 'detect'
-    }
+      version: 'detect',
+    },
   },
   rules: {
     'react/react-in-jsx-scope': 'off', // Not needed in React 17+
-    '@typescript-eslint/no-unused-vars': ['warn', {
-      argsIgnorePattern: "^_",
-      varsIgnorePattern: "^_"
-    }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      },
+    ],
     '@typescript-eslint/no-explicit-any': 'warn',
-    'react/prop-types': 'off' // Using TypeScript for prop validation
+    'react/prop-types': 'off', // Using TypeScript for prop validation
   },
-  ignorePatterns: [
-    'dist',
-    'node_modules',
-    '*.config.js',
-    '*.config.ts'
-  ]
-}
+  ignorePatterns: ['dist', 'node_modules', '*.config.js', '*.config.ts'],
+};
 ```
 
 **File**: `.prettierrc`
@@ -377,13 +374,13 @@ export default {
   content: [
     './src/popup/**/*.{js,ts,jsx,tsx,html}',
     './src/options/**/*.{js,ts,jsx,tsx,html}',
-    './src/contents/**/*.{js,ts,jsx,tsx,css,html}'
+    './src/contents/**/*.{js,ts,jsx,tsx,css,html}',
   ],
   theme: {
-    extend: {}
+    extend: {},
   },
-  plugins: []
-}
+  plugins: [],
+};
 ```
 
 **File**: `postcss.config.js`
@@ -392,9 +389,9 @@ export default {
 export default {
   plugins: {
     tailwindcss: {},
-    autoprefixer: {}
-  }
-}
+    autoprefixer: {},
+  },
+};
 ```
 
 ---
@@ -404,23 +401,21 @@ export default {
 Create `vite.config.ts` with Chrome extension support.
 
 **Key changes**:
+
 - Removed `vite-plugin-sharp-resize`. Icons are now generated via pre-build script to prevent CRXJS manifest validation errors (race condition).
 - Removed manual `rollupOptions` (handled by CRXJS).
 
 ```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { crx } from '@crxjs/vite-plugin'
-import manifest from './src/manifest'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { crx } from '@crxjs/vite-plugin';
+import manifest from './src/manifest';
 
 export default defineConfig(({ mode }) => {
-  const isDevelopment = mode === 'development'
+  const isDevelopment = mode === 'development';
 
   return {
-    plugins: [
-      react(),
-      crx({ manifest }),
-    ],
+    plugins: [react(), crx({ manifest })],
     build: {
       // Source maps: development = true, production = false
       sourcemap: isDevelopment,
@@ -428,24 +423,24 @@ export default defineConfig(({ mode }) => {
       minify: isDevelopment ? false : 'esbuild',
       // Don't emit declaration files (.d.ts)
       // Empty outDir before build (for clean builds)
-      emptyOutDir: true
+      emptyOutDir: true,
     },
     // Development server configuration
     server: {
-      hmr: isDevelopment
-    }
-  }
-})
+      hmr: isDevelopment,
+    },
+  };
+});
 ```
 
 **Configuration Summary**:
 
-| Setting | Development (`npm run dev`) | Production (`npm run build`) |
-|---------|---------------------------|------------------------------|
-| Watch Mode | ✅ Yes | ❌ No |
-| Source Maps | ✅ Generated | ❌ Removed |
-| Minification | ❌ No | ✅ Yes (esbuild) |
-| Content Script HMR | ✅ Auto-handled by CRXJS | ❌ Disabled |
+| Setting            | Development (`npm run dev`) | Production (`npm run build`) |
+| ------------------ | --------------------------- | ---------------------------- |
+| Watch Mode         | ✅ Yes                      | ❌ No                        |
+| Source Maps        | ✅ Generated                | ❌ Removed                   |
+| Minification       | ❌ No                       | ✅ Yes (esbuild)             |
+| Content Script HMR | ✅ Auto-handled by CRXJS    | ❌ Disabled                  |
 
 ---
 
@@ -485,7 +480,7 @@ Create a **type-safe TypeScript manifest** file.
 
 const manifest: Chrome.Manifest.WebExtensionManifest = {
   manifest_version: 3,
-  name: 'WoofManager AI Identification',
+  name: 'Easy Extension',
   version: '1.0.0',
   description: 'AI-powered content identification tool using WASM',
 
@@ -493,7 +488,7 @@ const manifest: Chrome.Manifest.WebExtensionManifest = {
     '16': 'logo/icon16.png',
     '32': 'logo/icon32.png',
     '48': 'logo/icon48.png',
-    '128': 'logo/icon128.png'
+    '128': 'logo/icon128.png',
   },
 
   action: {
@@ -502,13 +497,13 @@ const manifest: Chrome.Manifest.WebExtensionManifest = {
       '16': 'logo/icon16.png',
       '32': 'logo/icon32.png',
       '48': 'logo/icon48.png',
-      '128': 'logo/icon128.png'
-    }
+      '128': 'logo/icon128.png',
+    },
   },
 
   background: {
     service_worker: 'src/background/index.ts', // Points to source TS
-    type: 'module'
+    type: 'module',
   },
 
   content_scripts: [
@@ -516,23 +511,18 @@ const manifest: Chrome.Manifest.WebExtensionManifest = {
       matches: ['<all_urls>'],
       js: ['src/contents/default-content/index.ts'], // Points to source TS
       css: ['src/contents/default-content/style.css'],
-      run_at: 'document_idle'
-    }
+      run_at: 'document_idle',
+    },
   ],
 
   options_page: 'src/options/default-page/index.html', // Points to source HTML
 
-  permissions: [
-    'activeTab',
-    'storage',
-    'scripting',
-    'tabs'
-  ],
+  permissions: ['activeTab', 'storage', 'scripting', 'tabs'],
 
-  host_permissions: ['<all_urls>']
-}
+  host_permissions: ['<all_urls>'],
+};
 
-export default manifest
+export default manifest;
 ```
 
 ---
@@ -540,6 +530,7 @@ export default manifest
 ### Phase 9: React Component Structure
 
 **Popup Entry** (`src/popup/main.tsx`):
+
 ```typescript
 import React from 'react'
 import ReactDOM from 'react-dom/client'
@@ -554,18 +545,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 ```
 
 **Popup HTML** (`src/popup/index.html`):
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WoofManager</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="./main.tsx"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easy Extension</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
 </html>
 ```
 
@@ -580,17 +572,17 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 **File**: `scripts/generate-icons.ts`
 
 ```typescript
-import sharp from 'sharp'
-import path from 'path'
-import fs from 'fs'
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 
-const ICON_SIZES = [16, 32, 48, 128]
-const SOURCE = path.resolve(__dirname, '../src/assets/logo.png')
+const ICON_SIZES = [16, 32, 48, 128];
+const SOURCE = path.resolve(__dirname, '../src/assets/logo.png');
 // Output to public/logo. Vite will automatically copy these to dist/logo
-const OUTPUT_DIR = path.resolve(__dirname, '../public/logo')
+const OUTPUT_DIR = path.resolve(__dirname, '../public/logo');
 
 async function generateIcons() {
-  await fs.promises.mkdir(OUTPUT_DIR, { recursive: true })
+  await fs.promises.mkdir(OUTPUT_DIR, { recursive: true });
   await Promise.all(
     ICON_SIZES.map(size =>
       sharp(SOURCE)
@@ -598,11 +590,11 @@ async function generateIcons() {
         .png()
         .toFile(path.join(OUTPUT_DIR, `icon${size}.png`))
     )
-  )
-  console.log('✅ Icons generated successfully in public/logo')
+  );
+  console.log('✅ Icons generated successfully in public/logo');
 }
 
-generateIcons().catch(console.error)
+generateIcons().catch(console.error);
 ```
 
 ---
@@ -610,6 +602,7 @@ generateIcons().catch(console.error)
 ### Phase 11: React Router HashRouter Setup (Options Pages)
 
 Install `react-router-dom` v6:
+
 ```bash
 npm install react-router-dom@6
 ```
@@ -676,7 +669,7 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      className={`py-4 px-2 border-b-2 font-medium transition-colors ${ 
+      className={`py-4 px-2 border-b-2 font-medium transition-colors ${
         isActive
           ? 'border-blue-500 text-blue-600'
           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -698,18 +691,25 @@ Create a wrapper for Origin Private File System in `src/shared/storage.ts` using
 // OPFS utilities for WASM/AI model storage
 // Functional programming approach with pure functions and composition
 
-export type FilePath = string
-export interface OPFSFile { name: string; data: ArrayBuffer; lastModified: number }
-export interface OPFSDirectory { name: string; entries: OPFSEntry[] }
-export type OPFSEntry = OPFSFile | OPFSDirectory
+export type FilePath = string;
+export interface OPFSFile {
+  name: string;
+  data: ArrayBuffer;
+  lastModified: number;
+}
+export interface OPFSDirectory {
+  name: string;
+  entries: OPFSEntry[];
+}
+export type OPFSEntry = OPFSFile | OPFSDirectory;
 export interface FileSystemError {
-  code: 'NOT_FOUND' | 'PERMISSION_DENIED' | 'QUOTA_EXCEEDED' | 'UNKNOWN'
-  message: string
+  code: 'NOT_FOUND' | 'PERMISSION_DENIED' | 'QUOTA_EXCEEDED' | 'UNKNOWN';
+  message: string;
 }
 
-export type Result<T, E = FileSystemError> = 
-  | { success: true; data: T } 
-  | { success: false; error: E }
+export type Result<T, E = FileSystemError> =
+  | { success: true; data: T }
+  | { success: false; error: E };
 
 // ... (Rest of the standard OPFS implementation, ensuring ES2022 compatibility)
 // Core functions: getRootDir, splitPath, navigateToDirectory, getFileHandle

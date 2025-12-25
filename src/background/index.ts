@@ -1,1 +1,1 @@
-console.log('Background service worker started')
+console.log('Background service worker started');

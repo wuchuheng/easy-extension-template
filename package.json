@@ -1,15 +1,17 @@
 {
-  "name": "com.woofmanager.ai.identification.extension",
+  "name": "easy-extension",
   "private": true,
   "version": "1.0.0",
+  "description": "Easy Extension - React/Tailwind/CRXJS Chrome extension template",
   "type": "module",
   "scripts": {
     "dev": "npm run generate-icons && vite",
     "build": "npm run generate-icons && vite build --mode production",
     "generate-icons": "tsx scripts/generate-icons.ts",
+    "gen:content-script": "TMPDIR=.tmp tsx scripts/gen-content-script.ts",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": " npm run type-check ; npm run lint:fix ; npm run format",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\""

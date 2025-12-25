@@ -32,7 +32,7 @@ const manifest: Chrome.Manifest.WebExtensionManifest = {
   content_scripts: [
     {
       matches: ['<all_urls>'],
-      js: ['src/contents/default-content/index.ts'],
+      js: ['src/contents/default-content/index.tsx'],
       run_at: 'document_idle'
     }
   ],

@@ -1,5 +1,4 @@
-# Easy Extension
-
+<h1 align="center"> Easy Extension</h1>
 <p align="center">
   <a href="https://github.com/wuchuheng/easy-extension-template/stargazers">
     <img src="https://img.shields.io/github/stars/wuchuheng/easy-extension-template?style=flat&logo=github" alt="GitHub stars">
@@ -8,7 +7,7 @@
     <img src="https://img.shields.io/github/issues/wuchuheng/easy-extension-template?style=flat" alt="GitHub issues">
   </a>
   <a href="https://github.com/wuchuheng/easy-extension-template/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/wuchuheng/easy-extension-template?style=flat" alt="License">
+    <img src="https://img.shields.io/badge/license-MIT-green?style=flat" alt="License: MIT">
   </a>
   <a href="https://github.com/wuchuheng/easy-extension-template/pulls">
     <img src="https://img.shields.io/github/issues-pr/wuchuheng/easy-extension-template?style=flat" alt="Pull Requests">
@@ -164,14 +163,3 @@ void mountAnchoredUI({
   hostId: 'extension-content-root',
 });
 ```
-
-## Aliases and tooling
-
-- Path alias `@/*` -> `src/*` (configured in `tsconfig.json` and `vite.config.ts`).
-- TypeScript includes `chrome` types for manifest and extension APIs.
-- Tailwind scans `src/contents/**/*`, `src/popup/**/*`, `src/options/**/*`.
-
-## Notes and known items
-
-- Lint warnings in `src/shared/storage.ts` about `any` remain (pre-existing); functionality is unaffected.
-- If you see temp directory leftovers, the generator cleans `.tmp` when used via the npm script; otherwise remove manually.

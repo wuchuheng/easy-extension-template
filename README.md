@@ -17,56 +17,69 @@
   </a>
 </p>
 
-Chrome extension built with Vite, React, Tailwind, and CRXJS. Content scripts render React UIs inside isolated Shadow DOMs for safe styling, and a generator CLI scaffolds new content scripts with a shared Hello component.
+Easy Extension gives you automatic hot-reload while you build the content script, popup page, and options page, and lets you write the UI in React, TypeScript, and Tailwind CSS.
 
-## Why this setup
+## Contents
 
-- **React everywhere**: popup, options, and content scripts share the same React/Tailwind toolchain.
-- **Shadow DOM isolation**: content script UIs use `mountAnchoredUI` to keep styles from leaking into or out of the host page.
-- **Tailwind utilities**: Tailwind CSS is inlined per content script (`style.css?inline`), no manifest-level CSS needed.
-- **CRXJS + Vite**: fast HMR during development, manifest-aware production builds.
-- **Scaffold new content scripts quickly**: `npm run gen:content-script <name>` creates a content script folder, a Tailwind stylesheet, registers it in `src/manifest.ts`, and reuses `HelloInCSUI` for an immediate visual check.
+- [Quick start](#quick-start)
+- [Live dev workflow](#live-dev-workflow)
+- [Add a new content script](#add-a-new-content-script)
+- [Anchor lifecycle and examples](#anchor-lifecycle-and-examples)
+- [Build UIs with React and Tailwind](#build-uis-with-react-and-tailwind)
+- [Project layout](#project-layout)
+- [Commands](#commands)
 
-## Project layout (key parts)
+## Quick start
 
-- `src/manifest.ts` — typed Manifest V3 (via `ManifestV3Export`) pointing to source entries.
-- `src/popup`, `src/options` — React/Tailwind UIs.
-- `src/contents/default-content` — example content script using `mountAnchoredUI`.
-- `src/contents/utils/anchor-mounter.tsx` — reusable helper that:
-  - resolves anchors (with debounced mutation observer),
-  - creates a Shadow DOM host and injects styles,
-  - mounts React via `createRoot`,
-  - supports overlay or inline positioning.
-- `src/components/HelloInCSUI.tsx` — shared hello widget used by generated scripts.
-- `scripts/gen-content-script.ts` — generator that scaffolds content scripts and updates the manifest via the TypeScript compiler API.
-
-## Getting started
+1. Install dependencies:
 
 ```bash
 npm install
-npm run dev          # CRXJS dev build (watch)
-npm run build        # Production build
-npm run preview      # Preview build output
-npm run lint         # Lint + format (runs type-check too)
-npm run type-check   # TypeScript only
 ```
 
-## Generate a content script
+2. Start the dev server with hot reload:
 
 ```bash
-npm run gen:content-script my-page
+npm run dev
 ```
 
-This creates `src/contents/my-page/index.tsx` and `style.css`, ensures `HelloInCSUI` exists, and adds the entry to `src/manifest.ts`. If the target folder already exists, the command aborts. After running, `.tmp` (used for tsx IPC) is cleaned automatically when set by the npm script.
+Vite/CRXJS prints a folder path (for example `.output/chrome-mv3`). Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick that folder. Edits to popup, options, and content scripts refresh automatically.
 
-## Content script pattern
+3. Build for release:
 
-- Import `mountAnchoredUI`, your component, and `style.css?inline`.
-- Anchors: `anchor` callback returns one or more elements. An overlay anchor is typically `document.body`; inline anchors are specific elements. The helper debounces DOM mutations and only mounts new anchors (to avoid loops when inserted inline).
-- Mount types:
-  - **Overlay**: append to `document.body` with high z-index.
-  - **Inline**: insert next to a specific element (`beforebegin`, `afterbegin`, `beforeend`, `afterend`).
-- Styles are applied inside the Shadow DOM, keeping host page CSS separate.
+```bash
+npm run build
+```
+
+4. Optional checks:
+
+```bash
+npm run lint         # ESLint + Prettier + type-check
+```
+
+## Live dev workflow
+
+- One Vite/CRXJS dev server with hot reload for popup, options, and content scripts.
+- React + TypeScript + Tailwind ready to build any extension UI.
+- Shadow DOM mounting keeps content script styles isolated from the host page.
+- CLI generator scaffolds new content scripts and updates the manifest for you.
+- Production build targets Manifest V3 for Chrome.
+
+## Add a new content script
+
+1. Generate a script (fails safely if the folder already exists):
+
+```bash
+npm run gen:content-script <name>
+# example: npm run gen:content-script my-page
+```
+
+2. The command creates `src/contents/my-page/index.tsx` and `style.css`, ensures `HelloInCSUI` exists, and registers the entry in `src/manifest.ts`.
+3. Start `npm run dev`, reload the unpacked extension, and replace the generated hello widget with your UI.
+
+## Anchor lifecycle and examples
+
+Content scripts rely on anchors (DOM nodes) to decide where to mount. The helper handles shadow host creation, style injection, and React mounting for both overlay and inline cases.
 
 ### Anchor lifecycle (Mermaid)
 
@@ -114,7 +127,7 @@ import { mountAnchoredUI } from '../utils/anchor-mounter';
 void mountAnchoredUI({
   anchor: async () => [document.body],
   mountType: { type: 'overlay' },
-  component: () => <HelloInCSUI name="overlay-demo" />,
+  component: () => <HelloInCSUI name="hello-world" />,
   style: styles,
   hostId: 'extension-content-root',
 });
@@ -143,23 +156,28 @@ void mountAnchoredUI({
 });
 ```
 
-Notes:
+- The helper debounces DOM mutations (500ms default) and only mounts new anchors to avoid loops when injecting inline.
 
-- The helper debounces DOM mutations (500ms default) and only mounts new anchors. It ignores previously mounted hosts to avoid self-trigger loops when inserting inline.
-- Keep host/container IDs unique per script if running multiple content scripts on the same page. Use `hostId` to avoid collisions.
+## Build UIs with React and Tailwind
 
-Example (overlay on body):
+- Content scripts inline Tailwind by importing `style.css?inline`, keeping styles inside the Shadow DOM host.
+- Use `mountAnchoredUI` to mount your component as an overlay on `document.body` or inline next to a specific element (see examples above).
+- Keep a stable `anchor` selector/callback so rerenders only happen when anchors change.
+- Share components across popup, options, and content scripts; they all use the same React/TypeScript/Tailwind toolchain.
 
-```tsx
-import HelloInCSUI from '@/components/HelloInCSUI';
-import styles from './style.css?inline';
-import { mountAnchoredUI } from '../utils/anchor-mounter';
+## Project layout
 
-void mountAnchoredUI({
-  anchor: async () => [document.body],
-  mountType: { type: 'overlay' },
-  component: () => <HelloInCSUI name="hello-world" />,
-  style: styles,
-  hostId: 'extension-content-root',
-});
-```
+- `src/manifest.ts` — typed Manifest V3 definition.
+- `src/popup`, `src/options` — React/Tailwind UIs for popup and options.
+- `src/contents/default-content` — example content script that mounts into the page.
+- `src/contents/utils/anchor-mounter.tsx` — helper that finds anchors, creates a Shadow DOM host, injects styles, and mounts React via `createRoot`.
+- `src/components/HelloInCSUI.tsx` — starter content script component reused by the generator.
+- `scripts/gen-content-script.ts` — CLI that scaffolds a content script and updates the manifest.
+
+## Commands
+
+- `npm run dev` — start Vite/CRXJS dev server with hot reload.
+- `npm run build` — production build for Chrome (Manifest V3).
+- `npm run gen:content-script <name>` — scaffold a new content script and register it.
+- `npm run lint` — ESLint + Prettier + type-check.
+- `npm run format` / `npm run format:check` — format or check formatting.

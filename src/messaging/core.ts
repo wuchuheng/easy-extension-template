@@ -117,7 +117,9 @@ export function defineChannel<Req, Res>(channelName: string) {
         sendResponse: (response?: unknown) => void,
       ) => {
         const msg = message as WireMessage;
-        if (msg.type !== "request" || msg.channel !== channelName) return false;
+        if (msg.type !== "request" || msg.channel !== channelName) {
+          return false;
+        }
 
         Promise.resolve()
           .then(() => handler(msg.payload as Req))
@@ -203,7 +205,9 @@ interface RouterOptions {
  * @param options Configuration options
  */
 export function initRouter(options: RouterOptions = {}) {
-  if (!isBackground()) return;
+  if (!isBackground()) {
+    return;
+  }
 
   const { debug = false } = options;
 
@@ -245,7 +249,9 @@ export function initRouter(options: RouterOptions = {}) {
       }
 
       // Ignore invalid messages
-      if (msg.type !== "request" || !msg.id || !msg.channel) return false;
+      if (msg.type !== "request" || !msg.id || !msg.channel) {
+        return false;
+      }
 
       const channel = msg.channel;
 

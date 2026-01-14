@@ -5,7 +5,9 @@ import { logAdd, logGet, logMeta, logClear } from "@/messaging/channels";
 let dbPromise: ReturnType<typeof openDB> | null = null;
 
 async function getDB() {
-  if (dbPromise) return dbPromise;
+  if (dbPromise) {
+    return dbPromise;
+  }
 
   try {
     const db = await openDB("logs.sqlite3", { debug: true });

@@ -142,10 +142,14 @@ const readPersistedShellState = (storageKey: string): ShellState => {
 
   try {
     const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return fallback;
+    if (!raw) {
+      return fallback;
+    }
 
     const parsed = JSON.parse(raw) as Partial<ShellState>;
-    if (!parsed || typeof parsed !== "object") return fallback;
+    if (!parsed || typeof parsed !== "object") {
+      return fallback;
+    }
 
     const windowState: WindowState =
       parsed.windowState === "maximized" || parsed.windowState === "minimized"
@@ -182,7 +186,9 @@ const readPersistedShellState = (storageKey: string): ShellState => {
 };
 
 const persistShellState = (storageKey: string, state: ShellState) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
   try {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
@@ -325,7 +331,9 @@ export default function MacWindowShell({
   }, [storageKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return undefined;
+    }
 
     const clampToViewport = () => {
       const container = containerRef.current;
@@ -341,14 +349,19 @@ export default function MacWindowShell({
     };
 
     window.addEventListener("resize", clampToViewport);
-    return () => window.removeEventListener("resize", clampToViewport);
+    return () => {
+      window.removeEventListener("resize", clampToViewport);
+    };
   }, []);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (windowState !== "normal" || isClosed) return;
-    const target = event.target as HTMLElement;
-    if (target.closest("button") || target.closest("[data-resize-handle]"))
+    if (windowState !== "normal" || isClosed) {
       return;
+    }
+    const target = event.target as HTMLElement;
+    if (target.closest("button") || target.closest("[data-resize-handle]")) {
+      return;
+    }
 
     const container = containerRef.current;
     const measuredSize = container
@@ -371,7 +384,9 @@ export default function MacWindowShell({
 
   const handlePointerMove = useCallback((event: PointerEvent) => {
     const dragMeta = dragMetaRef.current;
-    if (!dragMeta) return;
+    if (!dragMeta) {
+      return;
+    }
     event.preventDefault();
 
     const deltaX = event.clientX - dragMeta.startX;
@@ -395,7 +410,9 @@ export default function MacWindowShell({
 
   const handleResizeMove = useCallback((event: PointerEvent) => {
     const resizeMeta = resizeMetaRef.current;
-    if (!resizeMeta) return;
+    if (!resizeMeta) {
+      return;
+    }
     event.preventDefault();
 
     const deltaX = event.clientX - resizeMeta.startX;
@@ -477,7 +494,9 @@ export default function MacWindowShell({
 
   useEffect(
     () => () => {
-      if (typeof window === "undefined") return;
+      if (typeof window === "undefined") {
+        return;
+      }
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
@@ -491,12 +510,16 @@ export default function MacWindowShell({
   const handleResizeStart =
     (direction: ResizeDirection) =>
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (windowState !== "normal" || isClosed) return;
+      if (windowState !== "normal" || isClosed) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
 
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) {
+        return;
+      }
 
       resizeMetaRef.current = {
         startX: event.clientX,

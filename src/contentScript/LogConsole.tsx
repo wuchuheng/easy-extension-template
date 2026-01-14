@@ -18,7 +18,9 @@ export default function LogConsole() {
   // --- Scroll Guard Logic ---
 
   const handleScroll = () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
     const { scrollHeight, scrollTop, clientHeight } = containerRef.current;
 
     // Distance from the bottom of the scroll content

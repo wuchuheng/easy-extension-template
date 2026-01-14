@@ -20,7 +20,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "format": "prettier --write '**/*.{tsx,ts,json,css,scss,md}'",
-    "zip": "npm run build && node src/zip.js"
+    "zip": "npm run build && node src/zip.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -31,6 +33,14 @@
     "web-sqlite-js": "^1.0.11"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.0.0",
     "@crxjs/vite-plugin": "^2.0.0-beta.26",
     "@types/chrome": "^0.0.246",
     "@types/react": "^18.2.28",

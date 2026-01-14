@@ -52,11 +52,17 @@ export function mountAnchoredUI(args: MountAnchoredUIArgs) {
         }
       }
 
-      if (!anchors || anchors.length === 0) return;
+      if (!anchors || anchors.length === 0) {
+        return;
+      }
 
       anchors.forEach((anchor) => {
-        if (mounted.has(anchor)) return;
-        if (args.hostId && document.getElementById(args.hostId)) return;
+        if (mounted.has(anchor)) {
+          return;
+        }
+        if (args.hostId && document.getElementById(args.hostId)) {
+          return;
+        }
         const record = mountOnAnchor(anchor, args);
         mounted.set(anchor, record);
       });
@@ -68,7 +74,9 @@ export function mountAnchoredUI(args: MountAnchoredUIArgs) {
   void run();
 
   const observer = new MutationObserver(() => {
-    if (debounceHandle) window.clearTimeout(debounceHandle);
+    if (debounceHandle) {
+      window.clearTimeout(debounceHandle);
+    }
     debounceHandle = window.setTimeout(() => {
       void run().catch(console.error);
     }, debounceMs);
@@ -80,7 +88,9 @@ export function mountAnchoredUI(args: MountAnchoredUIArgs) {
   });
 
   window.addEventListener("popstate", () => {
-    if (debounceHandle) window.clearTimeout(debounceHandle);
+    if (debounceHandle) {
+      window.clearTimeout(debounceHandle);
+    }
     void run().catch(console.error);
   });
 }
@@ -89,7 +99,9 @@ async function resolveAnchors(
   getter: AnchorGetter,
 ): Promise<Element[] | undefined> {
   const result = await getter();
-  if (!result) return undefined;
+  if (!result) {
+    return undefined;
+  }
   const raw = Array.from(result);
   const filtered = raw.filter(
     (el) => !el.hasAttribute("data-extension-shadow-host"),
@@ -174,7 +186,9 @@ function applyStyles(shadowRoot: ShadowRoot, cssText: string) {
   const existingStyle = shadowRoot.querySelector(
     'style[data-extension-style="true"]',
   );
-  if (existingStyle) return;
+  if (existingStyle) {
+    return;
+  }
 
   const styleEl = document.createElement("style");
   styleEl.setAttribute("data-extension-style", "true");

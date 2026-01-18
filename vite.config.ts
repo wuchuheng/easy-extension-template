@@ -22,4 +22,11 @@ export default defineConfig({
       origin: [/chrome-extension:\/\//],
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        offscreen: 'src/offscreen/index.html',
+      },
+    },
+  },
 })

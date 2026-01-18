@@ -1,15 +1,26 @@
-console.log('[background] Background script loaded')
+import {
+  sendMsgFromBGToOption,
+  sendMsgFromCSToBG,
+  sendMsgFromOptionToBG,
+} from '@/messaging/channels'
+import './setUpOffscreen'
+/**
+ * Background Service Worker
+ * Handles offscreen document creation for SQLite and WASM support.
+ */
 
-// Helper to create offscreen document
-async function createOffscreen() {
-  if (await chrome.offscreen.hasDocument()) return
-  await chrome.offscreen.createDocument({
-    url: 'src/offscreen/index.html',
-    reasons: [chrome.offscreen.Reason.DOM_PARSER],
-    justification: 'Parse DOM in background',
-  })
-}
+console.log('[background] Script loaded')
 
-chrome.runtime.onInstalled.addListener(createOffscreen)
-chrome.runtime.onStartup.addListener(createOffscreen)
-createOffscreen()
+sendMsgFromCSToBG.on(async (msg) => {
+  console.log('[background] Received message from content script:', msg)
+  return 'Hi'
+})
+
+sendMsgFromOptionToBG.on(async (msg) => {
+  console.log('[background] Received message from options:', msg)
+  return 'Hi'
+})
+
+setTimeout(() => {
+  sendMsgFromBGToOption.send('Hi')
+}, 10000)

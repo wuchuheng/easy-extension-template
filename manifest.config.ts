@@ -14,7 +14,11 @@ export default defineManifest({
     },
     default_popup: 'src/popup/index.html',
   },
-  permissions: ['sidePanel', 'contentSettings', 'offscreen'],
+  options_ui: {
+    page: 'src/options/index.html',
+    open_in_tab: true,
+  },
+  permissions: ['sidePanel', 'contentSettings', 'offscreen', 'tabs'],
   background: {
     service_worker: 'src/background/index.ts',
     type: 'module',

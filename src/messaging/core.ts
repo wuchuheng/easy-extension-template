@@ -4,7 +4,7 @@
 /**
  * Internal handler signature
  */
-type Handler<Req, Res> = (request: Req) => Promise<Res> | Res
+type Handler<Req, Res> = (request: Req, sender: chrome.runtime.MessageSender) => Promise<Res> | Res
 
 /**
  * Wire message format (requests, responses, registration)
@@ -34,7 +34,7 @@ const isBackground = (): boolean => {
 }
 
 if (isBackground()) {
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const msg = message as WireMessage
     if (msg.type !== 'request' || !localHandlers.has(msg.channel)) {
       return false
@@ -43,7 +43,7 @@ if (isBackground()) {
     const handler = localHandlers.get(msg.channel)!
 
     Promise.resolve()
-      .then(() => handler(msg.payload))
+      .then(() => handler(msg.payload, sender))
       .then((result) =>
         sendResponse({
           type: 'response',
@@ -135,7 +135,10 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
         throw new Error(chrome.runtime.lastError.message)
       }
       if (!msg) {
-        throw new Error('No response received (receiver might not have called sendResponse)')
+        throw new Error(
+          'No response received (receiver might not have called sendResponse), channel: ' +
+            channelName
+        )
       }
       if (msg.success === false) {
         throw new Error(msg.error ?? 'Messaging error')
@@ -170,7 +173,8 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
         return success as Res
       }
 
-      throw new Error('Failed to send message to any content script')
+      // throw error with channel name.
+      throw new Error('Failed to send message to any content script, channel: ' + channelName)
     }
 
     return chrome.runtime.sendMessage(message).then(handleResponse)
@@ -211,7 +215,7 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
 
       const listener = (
         message: unknown,
-        _sender: chrome.runtime.MessageSender,
+        sender: chrome.runtime.MessageSender,
         sendResponse: (response?: unknown) => void
       ) => {
         const msg = message as WireMessage
@@ -220,7 +224,7 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
         }
 
         Promise.resolve()
-          .then(() => handler(msg.payload as Req))
+          .then(() => handler(msg.payload as Req, sender))
           .then((result) =>
             sendResponse({
               type: 'response',

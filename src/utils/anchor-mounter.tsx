@@ -57,7 +57,7 @@ export interface MountAnchoredUIArgs {
    * @example
    * () => <MyButton />
    */
-  component: () => React.ReactElement
+  component: React.ComponentType
 
   /**
    * CSS styles to inject into the shadow DOM.
@@ -284,7 +284,7 @@ function mountOnAnchor(anchor: Element, args: MountAnchoredUIArgs): MountRecord 
   }
 
   const root = createRoot(container)
-  root.render(args.component())
+  root.render(<args.component />)
 
   return { anchor, host, container, shadowRoot, root }
 }

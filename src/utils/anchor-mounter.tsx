@@ -243,7 +243,7 @@ async function resolveAnchors(getter: AnchorGetter): Promise<Element[] | undefin
   const raw = Array.isArray(result) ? result : Array.from(result)
 
   for (const el of raw) {
-    if (!el.hasAttribute('data-extension-shadow-host') && !seen.has(el)) {
+    if (el instanceof Element && !el.hasAttribute('data-extension-shadow-host') && !seen.has(el)) {
       seen.add(el)
       unique.push(el)
     }

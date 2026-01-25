@@ -22,5 +22,6 @@ chromium \
   --user-data-dir="$USER_DATA_DIR" \
   --disable-extensions-except="$EXT_DIR" \
   --load-extension="$EXT_DIR" \
+  --unsafely-disable-devtools-self-xss-warnings \
   --no-first-run 
   # --auto-open-devtools-for-tabs

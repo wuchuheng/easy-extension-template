@@ -34,9 +34,9 @@ NOTES
 
 ## 3) Current stage
 
-- **Current stage (1-8)**: Stage 8 (Worker) - TASK-101 Implementation Complete
+- **Current stage (1-8)**: Stage 8 (Worker) - TASK-101 Complete, TASK-102 Complete
 - **Active release**: v1.1.0 (Event Relay System)
-- **Status summary**: Event Relay System (F-001) coding complete (TASK-101). Testing pending (TASK-102).
+- **Status summary**: Event Relay System (F-001) implementation complete (TASK-101, TASK-102). Manual testing pending.
 - **Last updated (YYYY-MM-DD)**: 2026-01-27
 
 ## 4) Technology stack (chosen in Stage 2)
@@ -78,6 +78,7 @@ NOTES
 
 ## 6) Recent changes
 
+- **2026-01-27**: TASK-102 (E2E Tests) complete. Vitest + Playwright setup, 10 E2E test scenarios implemented, test utilities created.
 - **2026-01-27**: TASK-101 (Event Relay System coding) complete. All type definitions, createEventRegister, relayCenter implemented.
 - **2026-01-27**: S5 Design complete for Event Relay System (F-001). API contracts, events, errors, and module LLD documented.
 - **2026-01-27**: S3 HLD and S5 API contracts scaffolded for existing channel system.

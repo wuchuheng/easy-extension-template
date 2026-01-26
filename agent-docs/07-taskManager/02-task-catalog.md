@@ -52,11 +52,12 @@ NOTES
     - All exported functions have TSDoc
     - No console errors/warnings
 
-- [ ] **TASK-102**: [Test] Implement E2E Tests
+- [x] **TASK-102**: [Test] Implement E2E Tests
   - **Priority**: P0 (Blocker)
   - **Dependencies**: TASK-101
   - **Boundary**: `tests/e2e/`, `vitest.config.ts`, `playwright.config.ts`
   - **Spec**: `agent-docs/01-discovery/04-feature.md` section 4
+  - **Micro-Spec**: [complete](agent-docs/08-task/active/TASK-102.md)
   - **Subtasks**:
     - Set up Vitest + Playwright environment
     - Create extension testing utilities

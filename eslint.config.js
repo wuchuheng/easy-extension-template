@@ -8,7 +8,7 @@ import globals from 'globals'
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', '*.config.ts', 'manifest.config.ts'],
+    ignores: ['dist', 'node_modules', '.chromiumCache', '*.config.ts', 'manifest.config.ts'],
   },
   eslintJS.configs.recommended,
   ...tseslint.configs.recommended,

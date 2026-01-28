@@ -1,12 +1,6 @@
-import { sendMsgFromCSToOffscreen } from '@/messaging/channels'
 import { openDB } from 'web-sqlite-js'
 
 console.log('[offscreen] Offscreen document loaded')
-
-sendMsgFromCSToOffscreen.on(async (msg) => {
-  console.log('[offscreen] Received message via channel:', msg)
-  return `Hi`
-})
 
 let dbPromise: ReturnType<typeof openDB> | null = null
 

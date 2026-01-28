@@ -1,7 +1,7 @@
 type SwitchProps = {
-  enabled: boolean;
-  onChange: (enabled: boolean) => void;
-};
+  enabled: boolean
+  onChange: (enabled: boolean) => void
+}
 export const Switch: React.FC<SwitchProps> = ({ enabled, onChange }) => {
   return (
     <label className="relative inline-flex cursor-pointer items-center">
@@ -14,5 +14,5 @@ export const Switch: React.FC<SwitchProps> = ({ enabled, onChange }) => {
       <div className="h-5 w-9 rounded-full bg-gray-200 transition peer-checked:bg-blue-500" />
       <div className="absolute left-1 top-1 h-3 w-3 rounded-full bg-white transition peer-checked:translate-x-4" />
     </label>
-  );
-};
+  )
+}

@@ -10,12 +10,13 @@ type Handler<Req, Res> = (request: Req, sender: chrome.runtime.MessageSender) =>
  * Wire message format (requests, responses, registration)
  */
 interface WireMessage {
-  type: 'request' | 'response' | 'register' | 'unregister'
+  type: 'request' | 'response' | 'unregister'
   channel: string
   id?: string
   payload?: unknown
   success?: boolean
   error?: string
+  toContent?: boolean
 }
 
 /**
@@ -33,37 +34,95 @@ const isBackground = (): boolean => {
   return typeof ServiceWorkerGlobalScope !== 'undefined' && self instanceof ServiceWorkerGlobalScope
 }
 
+/**
+ * Helper to broadcast message to all tabs
+ */
+const broadcastToContent = async (message: WireMessage): Promise<WireMessage> => {
+  // Broadcast to all http/https tabs
+  const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] })
+  if (tabs.length === 0) {
+    throw new Error('No target tabs found')
+  }
+
+  const promises = tabs.map((tab) =>
+    chrome.tabs
+      .sendMessage(tab.id!, message)
+      .then((res) => {
+        // res is the WireMessage response from the content script
+        return res as WireMessage
+      })
+      .catch((err) => {
+        console.warn(`Failed to send to tab ${tab.id}:`, err)
+        return null
+      })
+  )
+
+  const results = await Promise.all(promises)
+
+  // Find a successful response
+  const success = results.find((r) => r !== null && r.success === true)
+  if (success) {
+    return success
+  }
+
+  // If no success, but we have a failure response (e.g. error from handler), return it
+  const failure = results.find((r) => r !== null)
+  if (failure) {
+    return failure
+  }
+
+  throw new Error('Failed to send message to any content script, channel: ' + message.channel)
+}
+
 if (isBackground()) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const msg = message as WireMessage
-    if (msg.type !== 'request' || !localHandlers.has(msg.channel)) {
-      return false
+
+    // 1. Local Handler
+    if (msg.type === 'request' && localHandlers.has(msg.channel)) {
+      const handler = localHandlers.get(msg.channel)!
+
+      Promise.resolve()
+        .then(() => handler(msg.payload, sender))
+        .then((result) =>
+          sendResponse({
+            type: 'response',
+            channel: msg.channel,
+            id: msg.id,
+            success: true,
+            payload: result,
+          } as WireMessage)
+        )
+        .catch((err) =>
+          sendResponse({
+            type: 'response',
+            channel: msg.channel,
+            id: msg.id,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          } as WireMessage)
+        )
+
+      return true
     }
 
-    const handler = localHandlers.get(msg.channel)!
+    // 2. Relay to Content (if requested and not handled locally)
+    if (msg.type === 'request' && msg.toContent) {
+      broadcastToContent(msg)
+        .then((response) => sendResponse(response))
+        .catch((err) =>
+          sendResponse({
+            type: 'response',
+            channel: msg.channel,
+            id: msg.id,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          } as WireMessage)
+        )
+      return true
+    }
 
-    Promise.resolve()
-      .then(() => handler(msg.payload, sender))
-      .then((result) =>
-        sendResponse({
-          type: 'response',
-          channel: msg.channel,
-          id: msg.id,
-          success: true,
-          payload: result,
-        } as WireMessage)
-      )
-      .catch((err) =>
-        sendResponse({
-          type: 'response',
-          channel: msg.channel,
-          id: msg.id,
-          success: false,
-          error: err instanceof Error ? err.message : String(err),
-        } as WireMessage)
-      )
-
-    return true
+    return false
   })
 }
 
@@ -96,6 +155,7 @@ export interface ChannelOptions {
  * // 2. Listen for messages (Receiver side)
  * import { getProfile } from './channels'
  *
+ * // Receiver
  * getProfile.on(async (req) => {
  *   console.log('Requested profile:', req.id)
  *   return { name: 'Alice' } // Return value is sent back as response
@@ -127,6 +187,7 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
       channel: channelName,
       id,
       payload,
+      toContent: options.toContent, // Pass the flag
     } as WireMessage
 
     const handleResponse = (response: unknown) => {
@@ -151,30 +212,8 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
         return chrome.tabs.sendMessage(tabId, message).then(handleResponse)
       }
 
-      // Broadcast to all http/https tabs
-      const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] })
-      if (tabs.length === 0) {
-        throw new Error('No target tabs found')
-      }
-
-      const promises = tabs.map((tab) =>
-        chrome.tabs
-          .sendMessage(tab.id!, message)
-          .then(handleResponse)
-          .catch((err) => {
-            console.warn(`Failed to send to tab ${tab.id}:`, err)
-            return null
-          })
-      )
-
-      const results = await Promise.all(promises)
-      const success = results.find((r) => r !== null)
-      if (success !== undefined && success !== null) {
-        return success as Res
-      }
-
-      // throw error with channel name.
-      throw new Error('Failed to send message to any content script, channel: ' + channelName)
+      // Use the shared broadcast helper
+      return broadcastToContent(message).then(handleResponse)
     }
 
     return chrome.runtime.sendMessage(message).then(handleResponse)

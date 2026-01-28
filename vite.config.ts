@@ -25,6 +25,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         offscreen: 'src/offscreen/index.html',

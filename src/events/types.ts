@@ -8,8 +8,8 @@ export enum ExtensionEnv {
 }
 
 export enum Role {
-  Sender = 'SENDER',
-  Receiver = 'RECEIVER',
+  Client = 'CLIENT',
+  Handler = 'HANDLER',
   Relay = 'RELAY',
 }
 
@@ -17,6 +17,7 @@ export enum MessageType {
   Request = 'REQUEST',
   Response = 'RESPONSE',
   ValidateEvent = 'VALIDATE_EVENT',
+  SetUpRelay = 'SET_UP_RELAY',
 }
 
 type CommonLetter = {
@@ -24,9 +25,9 @@ type CommonLetter = {
   to: Role
   content: {
     event: string
+    id: string
     env: {
       type: ExtensionEnv
-      tabId?: number
     }
   }
 }
@@ -34,6 +35,12 @@ type CommonLetter = {
 export type ValidateEventLetter = CommonLetter & {
   content: {
     type: MessageType.ValidateEvent
+  }
+}
+
+export type SetUpRelayLetter = CommonLetter & {
+  content: {
+    type: MessageType.SetUpRelay
   }
 }
 
@@ -60,6 +67,7 @@ export type Letter<TArgs = void, TReturn = void> =
   | ValidateEventLetter
   | RequestLetter<TArgs>
   | ResponseLetter<TReturn>
+  | SetUpRelayLetter
 
 // GlobalThis type for global extensionEvent object
 declare global {
@@ -67,8 +75,9 @@ declare global {
     events: Map<
       string,
       {
-        backgroundCallback: <TArgs, TReturn>(data: TArgs) => Promise<TReturn>
-        from: ExtensionEnv
+        backgroundCallback?: <TArgs, TReturn>(data: TArgs) => Promise<TReturn>
+        ports?: Map<number, chrome.runtime.Port>
+        definedFrom: ExtensionEnv
       }
     >
   }

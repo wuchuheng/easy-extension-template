@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import App from './views/App.tsx'
-import { foolEvent } from '@/events/core.ts'
+import { setUpTest } from '@/events/contentScript/contentScript-test.ts'
 
 console.log('[CRXJS] Hello world from content script!')
 
@@ -9,6 +9,4 @@ container.id = 'crxjs-app'
 document.body.appendChild(container)
 createRoot(container).render(<App />)
 
-foolEvent.handle(async (arg: string): Promise<string> => {
-  return arg
-})
+setUpTest()

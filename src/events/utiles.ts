@@ -27,8 +27,10 @@ export function getExtensionEnv(): ExtensionEnv {
   return ExtensionEnv.ContentScript
 }
 
-const EventSymbol = 'event-relay'
-export const relayPort = {
-  data: { name: EventSymbol },
-  checkIsRelayPort: (port: chrome.runtime.Port) => port.name === relayPort.data.name,
+/**
+ * Get a unique letter id.
+ * @returns A unique letter id.
+ */
+export const getLetterId = () => {
+  return `${Date.now()}-${Math.random().toString(36).substring(2)}`
 }

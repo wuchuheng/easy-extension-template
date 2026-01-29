@@ -1,24 +1,17 @@
-import { ExtensionEnv, MessageType, ResponseLetter, Role, ValidateEventLetter } from './types'
-
 /**
- * Check if the event name is valid.
- * @param name The event name to check.
+ * Check if the message is a letter.
+ * @param message The message to check.
+ * @returns True if the message is a letter, false otherwise.
  */
-export const checkEventName = (name: string) => {
-  const letter: ValidateEventLetter = {
-    from: Role.Sender,
-    to: Role.Relay,
-    content: {
-      type: MessageType.ValidateEvent,
-      event: name,
-      env: {
-        type: ExtensionEnv.ExtensionPage,
-      },
-    },
+export const checkIsLetterFormat = (message: unknown): boolean => {
+  if (typeof message !== 'object' || message === null) {
+    return false
   }
-  chrome.runtime.sendMessage(letter).then((response: ResponseLetter) => {
-    if (!response.content.success) {
-      throw new Error(response.content.error?.message || 'Validate event failed.')
-    }
-  })
+  if (!('from' in message)) {
+    return false
+  }
+  if (!('to' in message)) {
+    return false
+  }
+  return true
 }

@@ -1,5 +1,7 @@
 import { isTest } from '../config'
-import { cs2bg, cs2cs, ep2cs } from './contentScript'
+import { cs2bg, cs2cs } from './contentScript'
+import { bg2cs } from '../background/background'
+import { ep2cs } from '../unified-ep2cs'
 import { log, Scope } from '../logger'
 
 export const setUpCS = () => {
@@ -61,14 +63,10 @@ export const setUpCS = () => {
   })
 
   // Handle bg2cs messages from background
-  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-    if (request.event === 'test:bg-to-cs') {
-      log(Scope.CONTENT_SCRIPT, '[bg2cs] handle test:bg-to-cs, arg:', request.args)
-      const result = request.args * 2
-      sendResponse({ success: true, data: result })
-      return true
-    }
-    return false
+  const bg2csEvent = bg2cs<number, number>('test:bg-to-cs')
+  bg2csEvent.handle(async (arg) => {
+    log(Scope.CONTENT_SCRIPT, '[bg2cs] handle test:bg-to-cs, arg:', arg)
+    return arg * 2
   })
 
   log(Scope.CONTENT_SCRIPT, '[setUpCS] Content script event handlers registered')

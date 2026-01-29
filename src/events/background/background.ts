@@ -6,6 +6,7 @@ import type { OneToOneEvent } from '../types'
 import { createInMemoryEvent, createMessageEvent } from '../internal/factories'
 import { sendMessageToTab } from '../internal/messaging'
 import { parseArgsAndTabId } from '../internal/parse-tab-id'
+import { buildEventName } from '../event-name'
 import {
   initializeRelayStorage,
   extractEventName,
@@ -28,7 +29,7 @@ const bg2bgFactory = createInMemoryEvent('bg2bg')
  * ```
  */
 export const bg2bg = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  bg2bgFactory<Args, Return>(name)
+  bg2bgFactory<Args, Return>(buildEventName('bg2bg', name))
 
 /**
  * Background to content script (chrome.tabs.sendMessage).
@@ -45,12 +46,13 @@ export const bg2cs = <Args = void, Return = void>(name: string) => {
     dispatch: (argsAndTabId: DispatchArgs) => Promise<Return>
   }
 
+  const eventName = buildEventName('bg2cs', name)
   const event: Bg2CsEvent = {
     dispatch: async (argsAndTabId: DispatchArgs) => {
       const [args, tabId] = parseArgsAndTabId<Args>(argsAndTabId)
-      return sendMessageToTab<Args, Return>(name, args, tabId)
+      return sendMessageToTab<Args, Return>(eventName, args, tabId)
     },
-    handle: createMessageEvent<Args, Return>(name).handle,
+    handle: createMessageEvent<Args, Return>(eventName).handle,
   }
 
   return event
@@ -66,7 +68,7 @@ export const bg2cs = <Args = void, Return = void>(name: string) => {
  * ```
  */
 export const bg2ep = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  createMessageEvent<Args, Return>(name, {
+  createMessageEvent<Args, Return>(buildEventName('bg2ep', name), {
     senderFilter: (sender) => sender.origin?.startsWith('chrome-extension://') ?? false,
   })
 

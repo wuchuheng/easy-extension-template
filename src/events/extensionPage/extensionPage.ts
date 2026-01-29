@@ -2,9 +2,9 @@
  * Extension page event patterns.
  */
 
-import type { OneToOneEvent, OneToManyEvent } from '../types'
-import { createMessageEvent, createPortDispatcher } from '../internal/factories'
-import { registerMessageListener } from '../internal/messaging'
+import type { OneToOneEvent } from '../types'
+import { createMessageEvent } from '../internal/factories'
+import { buildEventName } from '../event-name'
 
 /**
  * Extension page to background (chrome.runtime.sendMessage).
@@ -16,21 +16,6 @@ import { registerMessageListener } from '../internal/messaging'
  * ```
  */
 export const ep2bg = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  createMessageEvent<Args, Return>(name, {
+  createMessageEvent<Args, Return>(buildEventName('ep2bg', name), {
     senderFilter: (sender) => sender.origin?.startsWith('chrome-extension://') ?? false,
   })
-
-/**
- * Extension page to content script (port-based relay via background).
- * Sends to ALL content scripts across all tabs.
- * @example
- * ```ts
- * const event = ep2cs<string, number>('count-tabs')
- * await event.dispatch('count') // returns number[]
- * // In content script: event.handle(async (arg) => 42)
- * ```
- */
-export const ep2cs = <Args = void, Return = void>(name: string): OneToManyEvent<Args, Return> => ({
-  dispatch: createPortDispatcher<Args, Return>(name),
-  handle: (callback) => registerMessageListener<Args, Return>(name, callback),
-})

@@ -82,17 +82,6 @@ export { cs2bg } from './contentScript/contentScript'
  */
 export { cs2ep } from './contentScript/contentScript'
 
-/**
- * Content script handler for extension page messages (port-based relay).
- * @example
- * ```ts
- * const event = ep2cs<string, number>('my-event')
- * event.handle(async (arg) => arg.length)
- * // In extension page: await event.dispatch('hello') // returns number[]
- * ```
- */
-export { ep2cs } from './contentScript/contentScript'
-
 // ============================================================================
 // Background Events
 // ============================================================================
@@ -150,15 +139,22 @@ export { relayService } from './background/background'
  */
 export { ep2bg } from './extensionPage/extensionPage'
 
+// ============================================================================
+// Unified Events
+// ============================================================================
 /**
- * Extension page to content script (port-based relay via background).
+ * Unified extension page/offscreen to content script event.
+ * Uses runtime detection to select the correct behavior per context.
  * @example
  * ```ts
  * const event = ep2cs<string, number>('my-event')
+ * // In content script:
+ * event.handle(async (arg) => arg.length)
+ * // In extension page/offscreen:
  * await event.dispatch('hello') // returns number[]
  * ```
  */
-export { ep2cs as ep2csFromPage } from './extensionPage/extensionPage'
+export { ep2cs } from './unified-ep2cs'
 
 // ============================================================================
 // Test Setup

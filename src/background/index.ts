@@ -1,4 +1,3 @@
-import {} from '@/messaging/channels'
 import './setUpOffscreen'
 import { setupBackground } from '@/events/test'
 import { relayService } from '@/events/background/background'

@@ -48,7 +48,12 @@ export default tseslint.config(
       },
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['eslint.config.js', '*.config.js', '*.config.ts'],
+          allowDefaultProject: [
+            'eslint.config.js',
+            '*.config.js',
+            '*.config.ts',
+            'tests/unit/ep2cs-env.spec.ts',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },

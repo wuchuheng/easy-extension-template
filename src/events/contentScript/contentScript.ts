@@ -2,8 +2,9 @@
  * Content script event patterns.
  */
 
-import type { OneToOneEvent, OneToManyEvent } from '../types'
-import { createInMemoryEvent, createMessageEvent, createPortHandler } from '../internal/factories'
+import type { OneToOneEvent } from '../types'
+import { createInMemoryEvent, createMessageEvent } from '../internal/factories'
+import { buildEventName } from '../event-name'
 
 const cs2csFactory = createInMemoryEvent('cs2cs')
 
@@ -17,7 +18,7 @@ const cs2csFactory = createInMemoryEvent('cs2cs')
  * ```
  */
 export const cs2cs = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  cs2csFactory<Args, Return>(name)
+  cs2csFactory<Args, Return>(buildEventName('cs2cs', name))
 
 /**
  * Content script to background (chrome.runtime.sendMessage).
@@ -29,7 +30,7 @@ export const cs2cs = <Args = void, Return = void>(name: string): OneToOneEvent<A
  * ```
  */
 export const cs2bg = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  createMessageEvent<Args, Return>(name)
+  createMessageEvent<Args, Return>(buildEventName('cs2bg', name))
 
 /**
  * Content script to extension page (chrome.runtime.sendMessage).
@@ -41,27 +42,6 @@ export const cs2bg = <Args = void, Return = void>(name: string): OneToOneEvent<A
  * ```
  */
 export const cs2ep = <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> =>
-  createMessageEvent<Args, Return>(name, {
+  createMessageEvent<Args, Return>(buildEventName('cs2ep', name), {
     senderFilter: (sender) => !sender.origin?.startsWith('chrome-extension://'),
   })
-
-/**
- * Extension page to content script handler (port-based relay).
- * Creates a long-lived connection to background relay service.
- * @example
- * ```ts
- * const event = ep2cs<string, number>('action:count')
- * const cancel = event.handle(async (arg) => {
- *   console.log('Received:', arg)
- *   return 42
- * })
- * // Later: cancel()
- * // In extension page: await event.dispatch('hello') // returns number[]
- * ```
- */
-export const ep2cs = <Args = void, Return = void>(name: string): OneToManyEvent<Args, Return> => ({
-  dispatch: async (_args: Args): Promise<Return[]> => {
-    throw new Error('ep2cs: Content scripts cannot dispatch ep2cs events. Use from extension page.')
-  },
-  handle: createPortHandler<Args, Return>(name),
-})

@@ -1,5 +1,8 @@
 import { isTest } from '../config'
-import { ep2bg, ep2cs } from './extensionPage'
+import { ep2bg } from './extensionPage'
+import { bg2ep } from '../background/background'
+import { cs2ep } from '../contentScript/contentScript'
+import { ep2cs } from '../unified-ep2cs'
 import { log, Scope } from '../logger'
 
 export const setUpEP = () => {
@@ -20,23 +23,17 @@ export const setUpEP = () => {
   })
 
   // Handle bg2ep messages from background
-  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-    if (request.event === 'test:bg-to-ep') {
-      log(Scope.EXTENSION_PAGE, '[bg2ep] handle test:bg-to-ep, arg:', request.args)
-      sendResponse({ success: true, data: 'ep received: ' + request.args })
-      return true
-    }
-    return false
+  const bg2epEvent = bg2ep<string, string>('test:bg-to-ep')
+  bg2epEvent.handle(async (arg) => {
+    log(Scope.EXTENSION_PAGE, '[bg2ep] handle test:bg-to-ep, arg:', arg)
+    return 'ep received: ' + arg
   })
 
   // Handle cs2ep messages from content script
-  chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-    if (request.event === 'test:cs-to-ep') {
-      log(Scope.EXTENSION_PAGE, '[cs2ep] handle test:cs-to-ep, arg:', request.args)
-      sendResponse({ success: true, data: 'ep received from cs: ' + request.args })
-      return true
-    }
-    return false
+  const cs2epEvent = cs2ep<string, string>('test:cs-to-ep')
+  cs2epEvent.handle(async (arg) => {
+    log(Scope.EXTENSION_PAGE, '[cs2ep] handle test:cs-to-ep, arg:', arg)
+    return 'ep received from cs: ' + arg
   })
 
   log(Scope.EXTENSION_PAGE, '[setUpEP] Extension page event handlers registered')

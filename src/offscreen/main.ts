@@ -1,3 +1,4 @@
+import { sayHelloFromOffToCS } from '@/events/config'
 import { openDB } from 'web-sqlite-js'
 
 console.log('[offscreen] Offscreen document loaded')
@@ -41,3 +42,10 @@ async function getDB(): ReturnType<typeof openDB> {
 getDB().catch((err) => {
   console.error('[offscreen] Failed to initialize database:', err)
 })
+
+let counter = 0
+setInterval(() => {
+  const content = `Hi, ${counter++}`
+  console.log('[offscreen] Sending message to content script:', content)
+  sayHelloFromOffToCS.dispatch(content)
+}, 1000 * 5)

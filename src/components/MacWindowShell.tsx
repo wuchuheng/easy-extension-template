@@ -1,5 +1,7 @@
 import type React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useWindowDrag } from '../hooks/useWindowDrag'
+import { useWindowResize, type ResizeDirection } from '../hooks/useWindowResize'
 
 type WindowState = 'normal' | 'maximized' | 'minimized'
 
@@ -8,34 +10,6 @@ type ShellState = {
   isClosed: boolean
   position: { x: number; y: number }
   size: { width: number; height: number }
-}
-
-type DragMeta = {
-  startX: number
-  startY: number
-  originX: number
-  originY: number
-  size: { width: number; height: number }
-}
-
-type ResizeDirection =
-  | 'right'
-  | 'left'
-  | 'top'
-  | 'bottom'
-  | 'top-left'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-right'
-
-type ResizeMeta = {
-  startX: number
-  startY: number
-  originWidth: number
-  originHeight: number
-  originX: number
-  originY: number
-  direction: ResizeDirection
 }
 
 type ToolbarProps = {
@@ -296,15 +270,10 @@ export default function MacWindowShell({ title, children, storageKey }: MacWindo
   const [shellState, setShellState] = useState<ShellState>(() =>
     readPersistedShellState(storageKey)
   )
-  const [isDragging, setIsDragging] = useState(false)
-  const [isResizing, setIsResizing] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const dragMetaRef = useRef<DragMeta | null>(null)
-  const resizeMetaRef = useRef<ResizeMeta | null>(null)
 
   const { windowState, isClosed, position, size } = shellState
   const showPanel = !isClosed && windowState !== 'minimized'
-  const motionClass = !isDragging && !isResizing ? 'transition-all duration-300 ease-in-out' : ''
 
   useEffect(() => {
     persistShellState(storageKey, shellState)
@@ -338,193 +307,33 @@ export default function MacWindowShell({ title, children, storageKey }: MacWindo
     }
   }, [])
 
-  // Drag handlers - declared in order to avoid forward reference issues
-  const handlePointerMove = useCallback((event: PointerEvent) => {
-    const dragMeta = dragMetaRef.current
-    if (!dragMeta) {
-      return
-    }
-    event.preventDefault()
+  // Use extracted drag hook
+  const { isDragging, handlePointerDown } = useWindowDrag({
+    position,
+    containerRef,
+    windowState,
+    isClosed,
+    onPositionChange: (newPosition) =>
+      setShellState((prev) => ({ ...prev, position: newPosition })),
+    clampPosition,
+    defaultSize: DEFAULT_SIZE,
+  })
 
-    const deltaX = event.clientX - dragMeta.startX
-    const deltaY = event.clientY - dragMeta.startY
+  // Use extracted resize hook
+  const { isResizing, handleResizeStart } = useWindowResize({
+    position,
+    size,
+    containerRef,
+    windowState,
+    isClosed,
+    onSizeChange: (state) =>
+      setShellState((prev) => ({ ...prev, position: state.position, size: state.size })),
+    clampSize,
+    getViewport,
+    minSize: MIN_SIZE,
+  })
 
-    const nextPosition = clampPosition(
-      { x: dragMeta.originX + deltaX, y: dragMeta.originY + deltaY },
-      dragMeta.size
-    )
-
-    setShellState((prev) => ({ ...prev, position: nextPosition }))
-  }, [])
-
-  // Store the latest handlePointerMove for cleanup
-  const handlePointerMoveRef = useRef(handlePointerMove)
-  useEffect(() => {
-    handlePointerMoveRef.current = handlePointerMove
-  }, [handlePointerMove])
-
-  const handlePointerUp = useCallback(() => {
-    dragMetaRef.current = null
-    setIsDragging(false)
-    // Use ref to avoid self-dependency
-    const currentMove = handlePointerMoveRef.current
-    window.removeEventListener('pointermove', currentMove)
-    // We'll remove the pointerup listener in the useEffect cleanup
-  }, [])
-
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      if (windowState !== 'normal' || isClosed) {
-        return
-      }
-      const target = event.target as HTMLElement
-      if (target.closest('button') || target.closest('[data-resize-handle]')) {
-        return
-      }
-
-      const container = containerRef.current
-      const measuredSize = container
-        ? { width: container.offsetWidth, height: container.offsetHeight }
-        : DEFAULT_SIZE
-
-      dragMetaRef.current = {
-        startX: event.clientX,
-        startY: event.clientY,
-        originX: position.x,
-        originY: position.y,
-        size: measuredSize,
-      }
-
-      setIsDragging(true)
-      window.addEventListener('pointermove', handlePointerMove)
-      window.addEventListener('pointerup', handlePointerUp)
-      window.addEventListener('pointercancel', handlePointerUp)
-    },
-    [windowState, isClosed, position, handlePointerMove, handlePointerUp]
-  )
-
-  const handleResizeMove = useCallback((event: PointerEvent) => {
-    const resizeMeta = resizeMetaRef.current
-    if (!resizeMeta) {
-      return
-    }
-    event.preventDefault()
-
-    const deltaX = event.clientX - resizeMeta.startX
-    const deltaY = event.clientY - resizeMeta.startY
-    const viewport = getViewport()
-
-    const rightEdge = resizeMeta.originX + resizeMeta.originWidth
-    const bottomEdge = resizeMeta.originY + resizeMeta.originHeight
-
-    const affectLeft = resizeMeta.direction.includes('left')
-    const affectRight = resizeMeta.direction.includes('right')
-    const affectTop = resizeMeta.direction.includes('top')
-    const affectBottom = resizeMeta.direction.includes('bottom')
-
-    let nextX = resizeMeta.originX
-    let nextY = resizeMeta.originY
-    let nextWidth = resizeMeta.originWidth
-    let nextHeight = resizeMeta.originHeight
-
-    if (affectRight) {
-      const maxWidth = viewport.width - PADDING - resizeMeta.originX
-      nextWidth = Math.max(MIN_SIZE.width, Math.min(maxWidth, resizeMeta.originWidth + deltaX))
-    }
-
-    if (affectBottom) {
-      const maxHeight = viewport.height - PADDING - resizeMeta.originY
-      nextHeight = Math.max(MIN_SIZE.height, Math.min(maxHeight, resizeMeta.originHeight + deltaY))
-    }
-
-    if (affectLeft) {
-      let proposedX = resizeMeta.originX + deltaX
-      const maxX = rightEdge - MIN_SIZE.width
-      proposedX = Math.min(proposedX, maxX)
-      proposedX = Math.max(PADDING, proposedX)
-      const maxWidth = viewport.width - PADDING - proposedX
-      nextX = proposedX
-      nextWidth = Math.max(MIN_SIZE.width, Math.min(maxWidth, rightEdge - proposedX))
-    }
-
-    if (affectTop) {
-      let proposedY = resizeMeta.originY + deltaY
-      const maxY = bottomEdge - MIN_SIZE.height
-      proposedY = Math.min(proposedY, maxY)
-      proposedY = Math.max(PADDING, proposedY)
-      const maxHeight = viewport.height - PADDING - proposedY
-      nextY = proposedY
-      nextHeight = Math.max(MIN_SIZE.height, Math.min(maxHeight, bottomEdge - proposedY))
-    }
-
-    setShellState((prev) => ({
-      ...prev,
-      position: { x: nextX, y: nextY },
-      size: clampSize({ width: nextWidth, height: nextHeight }, { x: nextX, y: nextY }),
-    }))
-  }, [])
-
-  // Store the latest handleResizeMove for cleanup
-  const handleResizeMoveRef = useRef(handleResizeMove)
-  useEffect(() => {
-    handleResizeMoveRef.current = handleResizeMove
-  }, [handleResizeMove])
-
-  const handleResizeUp = useCallback(() => {
-    resizeMetaRef.current = null
-    setIsResizing(false)
-    // Use ref to avoid self-dependency
-    const currentMove = handleResizeMoveRef.current
-    window.removeEventListener('pointermove', currentMove)
-    // We'll remove the pointerup listener in the useEffect cleanup
-  }, [])
-
-  useEffect(
-    () => () => {
-      if (typeof window === 'undefined') {
-        return
-      }
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', handlePointerUp)
-      window.removeEventListener('pointercancel', handlePointerUp)
-      window.removeEventListener('pointermove', handleResizeMove)
-      window.removeEventListener('pointerup', handleResizeUp)
-      window.removeEventListener('pointercancel', handleResizeUp)
-    },
-    [handlePointerMove, handlePointerUp, handleResizeMove, handleResizeUp]
-  )
-
-  // Resize handlers - declared in order to avoid forward reference issues
-  const handleResizeStart = useCallback(
-    (direction: ResizeDirection) => (event: React.PointerEvent<HTMLDivElement>) => {
-      if (windowState !== 'normal' || isClosed) {
-        return
-      }
-      event.preventDefault()
-      event.stopPropagation()
-
-      const container = containerRef.current
-      if (!container) {
-        return
-      }
-
-      resizeMetaRef.current = {
-        startX: event.clientX,
-        startY: event.clientY,
-        originWidth: container.offsetWidth,
-        originHeight: container.offsetHeight,
-        originX: position.x,
-        originY: position.y,
-        direction,
-      }
-
-      setIsResizing(true)
-      window.addEventListener('pointermove', handleResizeMove)
-      window.addEventListener('pointerup', handleResizeUp)
-      window.addEventListener('pointercancel', handleResizeUp)
-    },
-    [windowState, isClosed, position, handleResizeMove, handleResizeUp]
-  )
+  const motionClass = !isDragging && !isResizing ? 'transition-all duration-300 ease-in-out' : ''
 
   const handleMaximize = () =>
     setShellState((prev) => ({

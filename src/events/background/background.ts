@@ -16,7 +16,7 @@ import {
 } from '../internal/port-relay'
 import { log, Scope } from '../logger'
 
-const bg2bgFactory = createInMemoryEvent('bg2bgCallbacks')
+const bg2bgFactory = createInMemoryEvent('bg2bg')
 
 /**
  * Background to background (in-memory).

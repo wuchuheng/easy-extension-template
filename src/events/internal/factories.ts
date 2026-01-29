@@ -19,32 +19,56 @@ import {
 } from './messaging'
 import { generateMsgId } from './port-relay'
 import { log, logWarn, Scope } from '../logger'
+import { getGlobalStorage } from './global-storage'
 
 declare global {
   var cs2csCallbacks: CallbackMap
   var bg2bgCallbacks: CallbackMap
 }
 
-// Initialize global storage
-if (!globalThis.cs2csCallbacks) {
-  globalThis.cs2csCallbacks = new CallbackMap()
+const CS2CS_KEY = 'cs2csCallbacks'
+const BG2BG_KEY = 'bg2bgCallbacks'
+
+/**
+ * Gets the content script to content script callback map.
+ */
+function getCs2csCallbacks(): CallbackMap {
+  return getGlobalStorage(CS2CS_KEY, () => new CallbackMap())
 }
-if (!globalThis.bg2bgCallbacks) {
-  globalThis.bg2bgCallbacks = new CallbackMap()
+
+/**
+ * Gets the background to background callback map.
+ */
+function getBg2bgCallbacks(): CallbackMap {
+  return getGlobalStorage(BG2BG_KEY, () => new CallbackMap())
 }
+
+/**
+ * Storage key configuration for in-memory events.
+ */
+const IN_MEMORY_STORAGE = {
+  cs2cs: getCs2csCallbacks,
+  bg2bg: getBg2bgCallbacks,
+} as const
 
 /**
  * Creates an in-memory one-to-one event (for cs2cs, bg2bg).
  * Uses globalThis for callback storage.
+ *
+ * @param storageKey - The key for the callback storage
+ * @returns A function that creates an event for the given storage type
  */
-export function createInMemoryEvent(storageKey: 'cs2csCallbacks' | 'bg2bgCallbacks') {
+export function createInMemoryEvent(
+  storageKey: keyof typeof IN_MEMORY_STORAGE
+): <Args = void, Return = void>(name: string) => OneToOneEvent<Args, Return> {
+  const getStorage = IN_MEMORY_STORAGE[storageKey]
   return <Args = void, Return = void>(name: string): OneToOneEvent<Args, Return> => ({
     dispatch: async (args: Args) => {
-      const callback = globalThis[storageKey].getFirst<Args, Return>(name)
+      const callback = getStorage().getFirst<Args, Return>(name)
       if (!callback) throw new Error(`No handler registered for event: ${name}`)
       return callback(args)
     },
-    handle: (callback: CallBack<Args, Return>) => globalThis[storageKey].register(name, callback),
+    handle: (callback: CallBack<Args, Return>) => getStorage().register(name, callback),
   })
 }
 

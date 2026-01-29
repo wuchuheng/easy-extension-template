@@ -5,16 +5,40 @@
 
 import type { PortMessageFormat, PortResponseFormat } from '../types'
 import { log, logWarn, Scope } from '../logger'
+import { getGlobalStorage } from './global-storage'
 
 declare global {
   var ep2csPorts: Map<string, chrome.runtime.Port[]>
   var ep2csPendingRequests: Map<string, PendingRequest>
 }
 
-type PendingRequest = {
+/**
+ * Represents a pending request that aggregates responses from multiple content scripts.
+ */
+export type PendingRequest = {
+  /** Resolve function to call when all responses are received */
   resolve: (responses: unknown[]) => void
+  /** Accumulated responses from content scripts */
   responses: unknown[]
+  /** Expected number of responses (equals number of connected content scripts) */
   expectedCount: number
+}
+
+const EP2CS_PORTS_KEY = 'ep2csPorts'
+const EP2CS_PENDING_REQUESTS_KEY = 'ep2csPendingRequests'
+
+/**
+ * Gets the map of event name to connected content script ports.
+ */
+function getEp2csPorts(): Map<string, chrome.runtime.Port[]> {
+  return getGlobalStorage(EP2CS_PORTS_KEY, () => new Map())
+}
+
+/**
+ * Gets the map of pending requests waiting for aggregation.
+ */
+function getEp2csPendingRequests(): Map<string, PendingRequest> {
+  return getGlobalStorage(EP2CS_PENDING_REQUESTS_KEY, () => new Map())
 }
 
 /**
@@ -37,14 +61,12 @@ export function extractEventName(portName: string): string | null {
 
 /**
  * Initializes global storage for ports and pending requests.
+ * This function is idempotent and safe to call multiple times.
  */
 export function initializeRelayStorage(): void {
-  if (!globalThis.ep2csPorts) {
-    globalThis.ep2csPorts = new Map()
-  }
-  if (!globalThis.ep2csPendingRequests) {
-    globalThis.ep2csPendingRequests = new Map()
-  }
+  // The getGlobalStorage utility handles initialization
+  getEp2csPorts()
+  getEp2csPendingRequests()
 }
 
 /**
@@ -64,6 +86,9 @@ export function isContentScript(port: chrome.runtime.Port): boolean {
 /**
  * Handles extension page connection for ep2cs relay.
  * Extension pages send one-time requests to be relayed to all content scripts.
+ *
+ * @param port - The port from the extension page
+ * @param eventName - The name of the event being relayed
  */
 export function handleExtensionPageConnection(port: chrome.runtime.Port, eventName: string): void {
   log(Scope.BACKGROUND, `[relayService] Extension page dispatch for event: ${eventName}`)
@@ -71,12 +96,15 @@ export function handleExtensionPageConnection(port: chrome.runtime.Port, eventNa
   port.onMessage.addListener((msg: PortMessageFormat<unknown>) => {
     const { msgId } = msg
 
+    const ep2csPorts = getEp2csPorts()
+    const ep2csPendingRequests = getEp2csPendingRequests()
+
     log(
       Scope.BACKGROUND,
-      `[relayService] Dispatching msgId: ${msgId} to ${globalThis.ep2csPorts.get(eventName)?.length ?? 0} content scripts`
+      `[relayService] Dispatching msgId: ${msgId} to ${ep2csPorts.get(eventName)?.length ?? 0} content scripts`
     )
 
-    const csPorts = globalThis.ep2csPorts.get(eventName) || []
+    const csPorts = ep2csPorts.get(eventName) || []
 
     // No content scripts connected - return empty array
     if (csPorts.length === 0) {
@@ -86,7 +114,7 @@ export function handleExtensionPageConnection(port: chrome.runtime.Port, eventNa
     }
 
     // Store pending request for aggregation
-    globalThis.ep2csPendingRequests.set(msgId, {
+    ep2csPendingRequests.set(msgId, {
       resolve: (responses) => {
         const response: PortResponseFormat<unknown[]> = { msgId, data: responses as unknown[] }
         port.postMessage(response)
@@ -113,15 +141,21 @@ export function handleExtensionPageConnection(port: chrome.runtime.Port, eventNa
 /**
  * Handles content script connection for ep2cs relay.
  * Content scripts maintain long-lived connections to receive messages.
+ *
+ * @param port - The port from the content script
+ * @param eventName - The name of the event being listened to
  */
 export function handleContentScriptConnection(port: chrome.runtime.Port, eventName: string): void {
   log(Scope.BACKGROUND, `[relayService] Content script connected for event: ${eventName}`)
 
+  const ep2csPorts = getEp2csPorts()
+  const ep2csPendingRequests = getEp2csPendingRequests()
+
   // Add port to event group
-  if (!globalThis.ep2csPorts.has(eventName)) {
-    globalThis.ep2csPorts.set(eventName, [])
+  if (!ep2csPorts.has(eventName)) {
+    ep2csPorts.set(eventName, [])
   }
-  const ports = globalThis.ep2csPorts.get(eventName)!
+  const ports = ep2csPorts.get(eventName)!
   ports.push(port)
 
   // Handle responses from content script
@@ -130,7 +164,7 @@ export function handleContentScriptConnection(port: chrome.runtime.Port, eventNa
 
     log(Scope.BACKGROUND, `[relayService] Received response for msgId: ${msgId}`)
 
-    const pending = globalThis.ep2csPendingRequests.get(msgId)
+    const pending = ep2csPendingRequests.get(msgId)
     if (!pending) {
       logWarn(Scope.BACKGROUND, `[relayService] No pending request for msgId: ${msgId}`)
       return
@@ -142,7 +176,7 @@ export function handleContentScriptConnection(port: chrome.runtime.Port, eventNa
     if (pending.responses.length === pending.expectedCount) {
       log(Scope.BACKGROUND, `[relayService] All responses received for msgId: ${msgId}`)
       pending.resolve(pending.responses)
-      globalThis.ep2csPendingRequests.delete(msgId)
+      ep2csPendingRequests.delete(msgId)
     }
   })
 
@@ -154,7 +188,7 @@ export function handleContentScriptConnection(port: chrome.runtime.Port, eventNa
       ports.splice(index, 1)
     }
     if (ports.length === 0) {
-      globalThis.ep2csPorts.delete(eventName)
+      ep2csPorts.delete(eventName)
     }
   })
 }

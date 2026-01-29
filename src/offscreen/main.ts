@@ -37,4 +37,7 @@ async function getDB(): ReturnType<typeof openDB> {
   }
 }
 
-getDB().then()
+// Initialize database on load
+getDB().catch((err) => {
+  console.error('[offscreen] Failed to initialize database:', err)
+})

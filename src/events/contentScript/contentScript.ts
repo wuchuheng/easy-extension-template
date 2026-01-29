@@ -5,7 +5,7 @@
 import type { OneToOneEvent, OneToManyEvent } from '../types'
 import { createInMemoryEvent, createMessageEvent, createPortHandler } from '../internal/factories'
 
-const cs2csFactory = createInMemoryEvent('cs2csCallbacks')
+const cs2csFactory = createInMemoryEvent('cs2cs')
 
 /**
  * Content script to content script (in-memory).

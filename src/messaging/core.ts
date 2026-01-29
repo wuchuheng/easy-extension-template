@@ -2,9 +2,45 @@
 // Shared file – used in ALL contexts (background, content, offscreen, popup, options, devtools)
 
 /**
+ * Error data format for messaging responses.
+ */
+interface ErrorData {
+  message: string
+  stack?: string
+}
+
+/**
  * Internal handler signature
  */
 type Handler<Req, Res> = (request: Req, sender: chrome.runtime.MessageSender) => Promise<Res> | Res
+
+/**
+ * Wraps an async handler and automatically sends success/error responses.
+ * Eliminates duplicate Promise.chain patterns across the codebase.
+ *
+ * @param handler - The async handler function to wrap (can return Promise<T> or T)
+ * @param sendResponse - Chrome's sendResponse callback
+ * @param context - Context for error messages (channel name or event name)
+ */
+function wrapAsyncHandler<T>(
+  handler: () => Promise<T> | T,
+  sendResponse: (response: { success: boolean; data?: T; error?: ErrorData }) => void,
+  context?: string
+): void {
+  Promise.resolve()
+    .then(() => handler())
+    .then((data) => sendResponse({ success: true, data }))
+    .catch((error) => {
+      const errorData: ErrorData = {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      }
+      sendResponse({ success: false, error: errorData })
+      if (context) {
+        console.warn(`[${context}] Handler error:`, error)
+      }
+    })
+}
 
 /**
  * Wire message format (requests, responses, registration)
@@ -82,43 +118,40 @@ if (isBackground()) {
     if (msg.type === 'request' && localHandlers.has(msg.channel)) {
       const handler = localHandlers.get(msg.channel)!
 
-      Promise.resolve()
-        .then(() => handler(msg.payload, sender))
-        .then((result) =>
+      wrapAsyncHandler(
+        () => handler(msg.payload, sender),
+        (result) => {
           sendResponse({
             type: 'response',
             channel: msg.channel,
             id: msg.id,
-            success: true,
-            payload: result,
+            success: result.success,
+            payload: result.data,
+            error: result.error?.message,
           } as WireMessage)
-        )
-        .catch((err) =>
-          sendResponse({
-            type: 'response',
-            channel: msg.channel,
-            id: msg.id,
-            success: false,
-            error: err instanceof Error ? err.message : String(err),
-          } as WireMessage)
-        )
+        },
+        msg.channel
+      )
 
       return true
     }
 
     // 2. Relay to Content (if requested and not handled locally)
     if (msg.type === 'request' && msg.toContent) {
-      broadcastToContent(msg)
-        .then((response) => sendResponse(response))
-        .catch((err) =>
+      wrapAsyncHandler(
+        () => broadcastToContent(msg),
+        (result) => {
           sendResponse({
             type: 'response',
             channel: msg.channel,
             id: msg.id,
-            success: false,
-            error: err instanceof Error ? err.message : String(err),
+            success: result.success,
+            payload: result.data,
+            error: result.error?.message,
           } as WireMessage)
-        )
+        },
+        msg.channel
+      )
       return true
     }
 
@@ -262,26 +295,20 @@ export function defineChannel<Req, Res>(channelName: string, options: ChannelOpt
           return false
         }
 
-        Promise.resolve()
-          .then(() => handler(msg.payload as Req, sender))
-          .then((result) =>
+        wrapAsyncHandler(
+          () => handler(msg.payload as Req, sender),
+          (result) => {
             sendResponse({
               type: 'response',
               channel: channelName,
               id: msg.id,
-              success: true,
-              payload: result,
+              success: result.success,
+              payload: result.data,
+              error: result.error?.message,
             })
-          )
-          .catch((err) =>
-            sendResponse({
-              type: 'response',
-              channel: channelName,
-              id: msg.id,
-              success: false,
-              error: err instanceof Error ? err.message : String(err),
-            })
-          )
+          },
+          channelName
+        )
 
         return true
       }

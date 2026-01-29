@@ -11,13 +11,21 @@ import { createMessageListener } from './message-listener'
 export const EP2CS_TIMEOUT_MS = 30_000
 
 /**
- * Converts an unknown error to a standardized error response format.
- * Used for MessageFormat responses (chrome.runtime.sendMessage).
+ * Standardized error response format.
  */
-export function errorToResponse(error: unknown): {
+export interface ErrorResponse {
   message: string
   stack: string
-} {
+}
+
+/**
+ * Converts an unknown error to a standardized error response format.
+ * Unified for both message and port-based responses.
+ *
+ * @param error - The error to convert
+ * @returns Standardized error response
+ */
+export function errorToResponse(error: unknown): ErrorResponse {
   return {
     message: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? (error.stack ?? '') : '',
@@ -25,15 +33,12 @@ export function errorToResponse(error: unknown): {
 }
 
 /**
- * Converts an error to a PortResponseFormat error object.
- * Used for port-based responses (ep2cs relay).
+ * Alias for errorToResponse for port-based responses.
+ * Maintained for backwards compatibility.
+ *
+ * @deprecated Use errorToResponse instead
  */
-export function errorToPortResponse(error: unknown) {
-  return {
-    message: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? (error.stack ?? '') : '',
-  }
-}
+export const errorToPortResponse = errorToResponse
 
 /**
  * Sends a message via chrome.runtime.sendMessage and handles the response.

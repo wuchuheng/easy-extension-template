@@ -1,12 +1,18 @@
 import {} from '@/messaging/channels'
 import './setUpOffscreen'
+import { setupBackground } from '@/events/test'
+import { relayService } from '@/events/background/background'
+import { log, Scope } from '@/events/logger'
+
 /**
  * Background Service Worker
  * Handles offscreen document creation for SQLite and WASM support.
  */
 
-console.log('[background] Script loaded')
+log(Scope.BACKGROUND, 'Script loaded')
 
-// eventRelay()
+// Start the relay service for ep2cs (extension page to content script)
+relayService()
 
-// test.testBackgroundToBackground()
+// Setup test event handlers
+setupBackground()

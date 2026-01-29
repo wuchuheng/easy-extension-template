@@ -82,3 +82,81 @@ declare global {
     >
   }
 }
+
+// ============================================================================
+// Event System Types (cs2cs, cs2bg, cs2ep, bg2bg, bg2cs, bg2ep, ep2bg, ep2cs)
+// ============================================================================
+
+/**
+ * Callback function type for event handlers.
+ */
+export type CallBack<Args, Return> = (args: Args) => Promise<Return>
+
+/**
+ * Cancel function type for unregistering event handlers.
+ */
+export type Cancel = () => void
+
+/**
+ * One-to-one event type.
+ * Used for most event patterns where a single dispatcher communicates with a single handler.
+ *
+ * @template Args - The arguments type passed to the handler
+ * @template Return - The return type from the handler
+ */
+export type OneToOneEvent<Args, Return> = {
+  dispatch: (args: Args) => Promise<Return>
+  handle: (callback: CallBack<Args, Return>) => Cancel
+}
+
+/**
+ * One-to-many event type.
+ * Used for patterns like ep2cs where a single dispatcher communicates with multiple handlers.
+ *
+ * @template Args - The arguments type passed to the handlers
+ * @template Return - The return type from the handlers (returned as an array)
+ */
+export type OneToManyEvent<Args, Return> = {
+  dispatch: (args: Args) => Promise<Return[]>
+  handle: (callback: CallBack<Args, Return>) => Cancel
+}
+
+/**
+ * Message format for chrome.runtime.sendMessage based patterns.
+ * Used by cs2bg, cs2ep, bg2ep, ep2bg.
+ */
+export type MessageFormat<Args, Return> = {
+  event: string
+  args: Args
+  response?: {
+    success: boolean
+    data?: Return
+    error?: {
+      message: string
+      stack: string
+    }
+  }
+}
+
+/**
+ * Port-based message format for ep2cs relay (request side).
+ * Sent from extension page to background relay.
+ */
+export type PortMessageFormat<Args> = {
+  msgId: string
+  event: string
+  args: Args
+}
+
+/**
+ * Port-based response format for ep2cs relay (response side).
+ * Sent from content script back to background relay.
+ */
+export type PortResponseFormat<Return> = {
+  msgId: string
+  data?: Return
+  error?: {
+    message: string
+    stack: string
+  }
+}

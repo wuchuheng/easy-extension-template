@@ -3,7 +3,7 @@
 # --- CONFIGURATION ---
 TARGET_URL="https://www.google.com"
 EXT_DIR="$(pwd)/dist"
-USER_DATA_DIR="$(pwd)/.chromiumCache"
+USER_DATA_DIR="$(pwd)/.chrome-data"
 PREFS_FILE="$USER_DATA_DIR/Default/Preferences"
 CDP_PORT=9222
 
